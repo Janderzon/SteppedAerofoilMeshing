@@ -22,8 +22,6 @@ for i in range(0, n+1):
     if i>0:
         lowerPoints.append(gmsh.model.geo.addPoint(coords[2][i], coords[3][i], 0, lc))
 
-print(coords)
-
 #Create the aerofoil lines
 upperLines = []
 lowerLines = []
@@ -38,6 +36,8 @@ lowerLines.reverse()
 
 #Create the aerofoil curve loop
 aerofoilLoop = gmsh.model.geo.addCurveLoop(lowerLines+upperLines)
+aerofoilGroup = gmsh.model.addPhysicalGroup(2, [aerofoilLoop])
+gmsh.model.setPhysicalName(2, aerofoilGroup, "Aerofoil Surface")
 
 #Create points for the volume boundary
 topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)
@@ -53,6 +53,8 @@ left = gmsh.model.geo.addLine(bottomLeft, topLeft)
 
 #Create the curve loop for the volume boundary
 volumeLoop = gmsh.model.geo.addCurveLoop([top, right, bottom, left])
+volumeGroup = gmsh.model.addPhysicalGroup(2, [volumeLoop])
+gmsh.model.setPhysicalName(2, volumeGroup, "Volume Boundary")
 
 #Create the surface
 surface = gmsh.model.geo.addPlaneSurface([aerofoilLoop, volumeLoop])

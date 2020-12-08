@@ -36,8 +36,6 @@ lowerLines.reverse()
 
 #Create the aerofoil curve loop
 aerofoilLoop = gmsh.model.geo.addCurveLoop(lowerLines+upperLines)
-aerofoilGroup = gmsh.model.addPhysicalGroup(2, [aerofoilLoop])
-gmsh.model.setPhysicalName(2, aerofoilGroup, "Aerofoil Surface")
 
 #Create boundary layer points
 upperBLPoints = []
@@ -79,14 +77,18 @@ left = gmsh.model.geo.addLine(bottomLeft, topLeft)
 
 #Create the curve loop for the volume boundary
 volumeLoop = gmsh.model.geo.addCurveLoop([top, right, bottom, left])
-volumeGroup = gmsh.model.addPhysicalGroup(2, [volumeLoop])
-gmsh.model.setPhysicalName(2, volumeGroup, "Volume Boundary")
 
 #Create the surface
 surface = gmsh.model.geo.addPlaneSurface([boundaryLayerLoop, volumeLoop])
 
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()
+
+#Create physical groups
+aerofoilGroup = gmsh.model.addPhysicalGroup(1, [aerofoilLoop])
+gmsh.model.setPhysicalName(1, aerofoilGroup, "Aerofoil Surface")
+volumeGroup = gmsh.model.addPhysicalGroup(1, [volumeLoop])
+gmsh.model.setPhysicalName(1, volumeGroup, "Volume Boundary")
 
 #Generate and save mesh
 gmsh.model.mesh.generate(2)

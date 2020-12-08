@@ -39,6 +39,32 @@ aerofoilLoop = gmsh.model.geo.addCurveLoop(lowerLines+upperLines)
 aerofoilGroup = gmsh.model.addPhysicalGroup(2, [aerofoilLoop])
 gmsh.model.setPhysicalName(2, aerofoilGroup, "Aerofoil Surface")
 
+#Create boundary layer points
+upperBLPoints = []
+lowerBLPoints = []
+for i in range(0, n+1):
+    upperBLPoints.append((0,gmsh.model.geo.addPoint(coords[0][i], coords[1][i], 0, lc)))
+    if i>0:
+        lowerBLPoints.append((0,gmsh.model.geo.addPoint(coords[2][i], coords[3][i], 0, lc)))
+
+#Scale boundary layer points
+gmsh.model.geo.dilate(upperBLPoints+lowerBLPoints, 0.25, 0, 0, 1.5, 2, 1)
+
+#Create the boundary layer lines
+upperBLLines = []
+lowerBLLines = []
+for i in range(0, n):
+    upperBLLines.append(gmsh.model.geo.addLine(upperBLPoints[i][1], upperBLPoints[i+1][1]))
+    if i>0:
+        lowerBLLines.append(-gmsh.model.geo.addLine(lowerBLPoints[i-1][1], lowerBLPoints[i][1]))
+    else:
+        lowerBLLines.append(-gmsh.model.geo.addLine(upperBLPoints[i][1], lowerBLPoints[i][1]))
+upperBLLines.append(gmsh.model.geo.addLine(upperBLPoints[n][1], lowerBLPoints[n-1][1]))
+lowerBLLines.reverse()
+
+#Create the boundary layer curve loop
+boundaryLayerLoop = gmsh.model.geo.addCurveLoop(lowerBLLines+upperBLLines)
+
 #Create points for the volume boundary
 topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)
 topRight = gmsh.model.geo.addPoint(2, 1, 0, lc)
@@ -57,7 +83,7 @@ volumeGroup = gmsh.model.addPhysicalGroup(2, [volumeLoop])
 gmsh.model.setPhysicalName(2, volumeGroup, "Volume Boundary")
 
 #Create the surface
-surface = gmsh.model.geo.addPlaneSurface([aerofoilLoop, volumeLoop])
+surface = gmsh.model.geo.addPlaneSurface([boundaryLayerLoop, volumeLoop])
 
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()

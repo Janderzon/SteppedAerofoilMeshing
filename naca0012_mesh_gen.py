@@ -23,6 +23,7 @@ for i in range(0, len(coords)):
 aerofoilLines = []
 for i in range(0, len(aerofoilPoints)):
     aerofoilLines.append(gmsh.model.geo.addLine(aerofoilPoints[i-1], aerofoilPoints[i]))
+    gmsh.model.geo.mesh.setTransfiniteCurve(aerofoilLines[i],2)
 
 #Create the aerofoil curve loop
 aerofoilLoop = gmsh.model.geo.addCurveLoop(aerofoilLines)
@@ -36,6 +37,7 @@ for i in range(0, len(coords)):
 boundaryLayerLines = []
 for i in range(0, len(boundaryLayerPoints)):
     boundaryLayerLines.append(gmsh.model.geo.addLine(boundaryLayerPoints[i-1], boundaryLayerPoints[i]))
+    gmsh.model.geo.mesh.setTransfiniteCurve(boundaryLayerLines[i],2)
 
 #Create the boundary layer curve loop
 boundaryLayerLoop = gmsh.model.geo.addCurveLoop(boundaryLayerLines)
@@ -44,11 +46,19 @@ boundaryLayerLoop = gmsh.model.geo.addCurveLoop(boundaryLayerLines)
 boundaryLayerDividerLines = []
 for i in range(0, len(boundaryLayerPoints)):
     boundaryLayerDividerLines.append(gmsh.model.geo.addLine(aerofoilPoints[i], boundaryLayerPoints[i]))
+    gmsh.model.geo.mesh.setTransfiniteCurve(boundaryLayerDividerLines[i],5)
 
 #Create boundary layer quadrilateral curve loops
 boundaryLayerQuadLoops = []
 for i in range(0, len(boundaryLayerPoints)):
     boundaryLayerQuadLoops.append(gmsh.model.geo.addCurveLoop([boundaryLayerLines[i],-boundaryLayerDividerLines[i],-aerofoilLines[i],boundaryLayerDividerLines[i-1]]))
+
+#Create boundary layer quadrilateral surfaces
+boundaryLayerQuadSurfaces = []
+for i in range(0, len(boundaryLayerPoints)):
+    boundaryLayerQuadSurfaces.append(gmsh.model.geo.addPlaneSurface([boundaryLayerQuadLoops[i]]))
+    gmsh.model.geo.mesh.setTransfiniteSurface(boundaryLayerQuadSurfaces[i])
+    gmsh.model.geo.mesh.setRecombine(2,boundaryLayerQuadSurfaces[i])
 
 #Create points for the volume boundary
 topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)

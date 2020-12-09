@@ -9,7 +9,6 @@ s = "sin"   #Spacing type for aerofoil points
 
 #Get the coordinates of the aerofoil
 coords = naca_4_series_points.points(0, 0, 12, n, s)
-print(coords)
 
 #Initialize Gmsh and name the model
 gmsh.initialize()
@@ -45,6 +44,11 @@ boundaryLayerLoop = gmsh.model.geo.addCurveLoop(boundaryLayerLines)
 boundaryLayerDividerLines = []
 for i in range(0, len(boundaryLayerPoints)):
     boundaryLayerDividerLines.append(gmsh.model.geo.addLine(aerofoilPoints[i], boundaryLayerPoints[i]))
+
+#Create boundary layer quadrilateral curve loops
+boundaryLayerQuadLoops = []
+for i in range(0, len(boundaryLayerPoints)):
+    boundaryLayerQuadLoops.append(gmsh.model.geo.addCurveLoop([boundaryLayerLines[i],-boundaryLayerDividerLines[i],-aerofoilLines[i],boundaryLayerDividerLines[i-1]]))
 
 #Create points for the volume boundary
 topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)

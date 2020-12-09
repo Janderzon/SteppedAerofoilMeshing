@@ -3,77 +3,48 @@ import gmsh
 import sys
 
 #Parameters
-n = 50     #Number of panels for upper and lower surface
+n = 5     #Number of panels for upper and lower surface
 lc = 1e-1   #Target mesh size close to points
 s = "sin"   #Spacing type for aerofoil points
 
 #Get the coordinates of the aerofoil
 coords = naca_4_series_points.points(0, 0, 12, n, s)
+print(coords)
 
 #Initialize Gmsh and name the model
 gmsh.initialize()
 gmsh.model.add("NACA 0012")
 
 #Create the aerofoil points
-upperPoints = []
-lowerPoints = []
-for i in range(0, n+1):
-    upperPoints.append(gmsh.model.geo.addPoint(coords[0][i], coords[1][i], 0, lc))
-    if i>0:
-        lowerPoints.append(gmsh.model.geo.addPoint(coords[2][i], coords[3][i], 0, lc))
+aerofoilPoints = []
+for i in range(0, len(coords)):
+    aerofoilPoints.append(gmsh.model.geo.addPoint(coords[i][0], coords[i][1], 0, lc))
 
 #Create the aerofoil lines
-upperLines = []
-lowerLines = []
-for i in range(0, n):
-    upperLines.append(gmsh.model.geo.addLine(upperPoints[i], upperPoints[i+1]))
-    if i>0:
-        lowerLines.append(-gmsh.model.geo.addLine(lowerPoints[i-1], lowerPoints[i]))
-    else:
-        lowerLines.append(-gmsh.model.geo.addLine(upperPoints[i], lowerPoints[i]))
-upperLines.append(gmsh.model.geo.addLine(upperPoints[n], lowerPoints[n-1]))
-lowerLines.reverse()
+aerofoilLines = []
+for i in range(0, len(aerofoilPoints)):
+    aerofoilLines.append(gmsh.model.geo.addLine(aerofoilPoints[i-1], aerofoilPoints[i]))
 
 #Create the aerofoil curve loop
-aerofoilLoop = gmsh.model.geo.addCurveLoop(lowerLines+upperLines)
+aerofoilLoop = gmsh.model.geo.addCurveLoop(aerofoilLines)
 
 #Create boundary layer points
-upperBLPoints = []
-lowerBLPoints = []
-for i in range(0, n+1):
-    upperBLPoints.append((0,gmsh.model.geo.addPoint(coords[0][i], coords[1][i], 0, lc)))
-    if i>0:
-        lowerBLPoints.append((0,gmsh.model.geo.addPoint(coords[2][i], coords[3][i], 0, lc)))
-
-#Scale boundary layer points
-gmsh.model.geo.dilate(upperBLPoints+lowerBLPoints, 0.25, 0, 0, 1.5, 2, 1)
+boundaryLayerPoints = []
+for i in range(0, len(coords)):
+    boundaryLayerPoints.append(gmsh.model.geo.addPoint((coords[i][0]-0.25)*1.5+0.25, coords[i][1]*2, 0, lc))
 
 #Create the boundary layer lines
-upperBLLines = []
-lowerBLLines = []
-for i in range(0, n):
-    upperBLLines.append(gmsh.model.geo.addLine(upperBLPoints[i][1], upperBLPoints[i+1][1]))
-    if i>0:
-        lowerBLLines.append(-gmsh.model.geo.addLine(lowerBLPoints[i-1][1], lowerBLPoints[i][1]))
-    else:
-        lowerBLLines.append(-gmsh.model.geo.addLine(upperBLPoints[i][1], lowerBLPoints[i][1]))
-upperBLLines.append(gmsh.model.geo.addLine(upperBLPoints[n][1], lowerBLPoints[n-1][1]))
-lowerBLLines.reverse()
+boundaryLayerLines = []
+for i in range(0, len(boundaryLayerPoints)):
+    boundaryLayerLines.append(gmsh.model.geo.addLine(boundaryLayerPoints[i-1], boundaryLayerPoints[i]))
 
 #Create the boundary layer curve loop
-boundaryLayerLoop = gmsh.model.geo.addCurveLoop(lowerBLLines+upperBLLines)
+boundaryLayerLoop = gmsh.model.geo.addCurveLoop(boundaryLayerLines)
 
 #Create lines to divide up boundary layer into quadrilaterals
-upperBLDivideLines = []
-lowerBLDivideLines = []
-for i in range(0, n+1):
-    upperBLDivideLines.append(gmsh.model.geo.addLine(upperBLPoints[i][1], upperPoints[i]))
-    if i<n:
-        lowerBLDivideLines.append(gmsh.model.geo.addLine(lowerBLPoints[i][1], lowerPoints[i]))
-    #else:
-        #lowerBLDivideLines.append(-gmsh.model.geo.addLine(upperBLPoints[i][1], lowerBLPoints[i][1]))
-#upperBLDivideLines.append(gmsh.model.geo.addLine(upperBLPoints[n][1], lowerBLPoints[n-1][1]))
-#lowerBLDivideLines.reverse()
+boundaryLayerDividerLines = []
+for i in range(0, len(boundaryLayerPoints)):
+    boundaryLayerDividerLines.append(gmsh.model.geo.addLine(aerofoilPoints[i], boundaryLayerPoints[i]))
 
 #Create points for the volume boundary
 topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)

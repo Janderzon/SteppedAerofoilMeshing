@@ -53,4 +53,11 @@ def points(m, p, t, n, s=""):
         xl.append(x[i]+yt[i]*math.sin(theta[i]))
         yl.append(yc[i]-yt[i]*math.cos(theta[i]))
 
-    return [xu, yu, xl, yl]
+    #Create coordinate array
+    coord = []
+    for i in range(0, n+1):
+        coord.append((xu[n-i], yu[n-i]))
+    for i in range(1, n+1):
+        coord.append((xl[i], yl[i]))
+
+    return coord

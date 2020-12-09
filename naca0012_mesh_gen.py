@@ -1,6 +1,7 @@
 import naca_4_series_points
 import gmsh
 import sys
+import aerofoil_scale
 
 #Parameters
 n = 25                          #Number of panels for each of the upper and lower surfaces of the aerofoil
@@ -8,7 +9,7 @@ spacing = "sin"                 #Spacing type for aerofoil points
 farFieldSize = 10               #Width and height of the far field volume boundary
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
 boundaryLayerMeshSize = 1e-1    #Target mesh size at the edge of the boundary layer
-boundaryLayerThickness = 2      #Thickness of the boundary layer
+boundaryLayerThickness = 0.02   #Thickness of the boundary layer
 boundaryLayerNumCells = 10      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
 boundaryLayerProgression = 1.5  #Growth rate of the cells in the boundary layer
 
@@ -34,9 +35,10 @@ for i in range(0, len(aerofoilPoints)):
 aerofoilLoop = gmsh.model.geo.addCurveLoop(aerofoilLines)
 
 #Create boundary layer points
+boundaryLayerCoords = aerofoil_scale.boundaryLayerScale(coords,boundaryLayerThickness)
 boundaryLayerPoints = []
-for i in range(0, len(coords)):
-    boundaryLayerPoints.append(gmsh.model.geo.addPoint((coords[i][0]-0.25)*boundaryLayerThickness*0.75+0.25, coords[i][1]*boundaryLayerThickness, 0, boundaryLayerMeshSize))
+for i in range(0, len(boundaryLayerCoords)):
+    boundaryLayerPoints.append(gmsh.model.geo.addPoint(boundaryLayerCoords[i][0], boundaryLayerCoords[i][1], 0, boundaryLayerMeshSize))
 
 #Create the boundary layer lines
 boundaryLayerLines = []

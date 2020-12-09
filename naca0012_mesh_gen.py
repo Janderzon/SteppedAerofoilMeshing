@@ -83,7 +83,7 @@ left = gmsh.model.geo.addLine(bottomLeft, topLeft)
 volumeLoop = gmsh.model.geo.addCurveLoop([top, right, bottom, left])
 
 #Create the surface
-surface = gmsh.model.geo.addPlaneSurface([boundaryLayerLoop, volumeLoop])
+volumeSurface = gmsh.model.geo.addPlaneSurface([boundaryLayerLoop, volumeLoop])
 
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()
@@ -93,6 +93,12 @@ aerofoilGroup = gmsh.model.addPhysicalGroup(1, [aerofoilLoop])
 gmsh.model.setPhysicalName(1, aerofoilGroup, "Aerofoil Surface")
 volumeGroup = gmsh.model.addPhysicalGroup(1, [volumeLoop])
 gmsh.model.setPhysicalName(1, volumeGroup, "Volume Boundary")
+
+#Set colours
+for i in range(0, len(boundaryLayerQuadSurfaces)):
+    gmsh.model.setColor([(2, boundaryLayerQuadSurfaces[i])], 255, 0, 0)
+gmsh.model.setColor([(2,volumeSurface)], 0, 255, 0)
+gmsh.option.setNumber("General.BackgroundGradient", 0)
 
 #Generate and save mesh
 gmsh.model.mesh.generate(2)

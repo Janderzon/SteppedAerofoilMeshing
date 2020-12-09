@@ -46,7 +46,7 @@ boundaryLayerLoop = gmsh.model.geo.addCurveLoop(boundaryLayerLines)
 boundaryLayerDividerLines = []
 for i in range(0, len(boundaryLayerPoints)):
     boundaryLayerDividerLines.append(gmsh.model.geo.addLine(aerofoilPoints[i], boundaryLayerPoints[i]))
-    gmsh.model.geo.mesh.setTransfiniteCurve(boundaryLayerDividerLines[i],5)
+    gmsh.model.geo.mesh.setTransfiniteCurve(boundaryLayerDividerLines[i],5,"Progression",1.5)
 
 #Create boundary layer quadrilateral curve loops
 boundaryLayerQuadLoops = []

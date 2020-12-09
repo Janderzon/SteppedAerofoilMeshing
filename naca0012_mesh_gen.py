@@ -3,12 +3,17 @@ import gmsh
 import sys
 
 #Parameters
-n = 5     #Number of panels for upper and lower surface
-lc = 1e-1   #Target mesh size close to points
-s = "sin"   #Spacing type for aerofoil points
+n = 25                          #Number of panels for each of the upper and lower surfaces of the aerofoil
+spacing = "sin"                 #Spacing type for aerofoil points
+farFieldSize = 10               #Width and height of the far field volume boundary
+farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
+boundaryLayerMeshSize = 1e-1    #Target mesh size at the edge of the boundary layer
+boundaryLayerThickness = 2      #Thickness of the boundary layer
+boundaryLayerNumCells = 10      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
+boundaryLayerProgression = 1.5  #Growth rate of the cells in the boundary layer
 
 #Get the coordinates of the aerofoil
-coords = naca_4_series_points.points(0, 0, 12, n, s)
+coords = naca_4_series_points.points(0, 0, 12, n, spacing)
 
 #Initialize Gmsh and name the model
 gmsh.initialize()
@@ -17,7 +22,7 @@ gmsh.model.add("NACA 0012")
 #Create the aerofoil points
 aerofoilPoints = []
 for i in range(0, len(coords)):
-    aerofoilPoints.append(gmsh.model.geo.addPoint(coords[i][0], coords[i][1], 0, lc))
+    aerofoilPoints.append(gmsh.model.geo.addPoint(coords[i][0], coords[i][1], 0))
 
 #Create the aerofoil lines
 aerofoilLines = []
@@ -31,7 +36,7 @@ aerofoilLoop = gmsh.model.geo.addCurveLoop(aerofoilLines)
 #Create boundary layer points
 boundaryLayerPoints = []
 for i in range(0, len(coords)):
-    boundaryLayerPoints.append(gmsh.model.geo.addPoint((coords[i][0]-0.25)*1.5+0.25, coords[i][1]*2, 0, lc))
+    boundaryLayerPoints.append(gmsh.model.geo.addPoint((coords[i][0]-0.25)*boundaryLayerThickness*0.75+0.25, coords[i][1]*boundaryLayerThickness, 0, boundaryLayerMeshSize))
 
 #Create the boundary layer lines
 boundaryLayerLines = []
@@ -46,7 +51,7 @@ boundaryLayerLoop = gmsh.model.geo.addCurveLoop(boundaryLayerLines)
 boundaryLayerDividerLines = []
 for i in range(0, len(boundaryLayerPoints)):
     boundaryLayerDividerLines.append(gmsh.model.geo.addLine(aerofoilPoints[i], boundaryLayerPoints[i]))
-    gmsh.model.geo.mesh.setTransfiniteCurve(boundaryLayerDividerLines[i],5,"Progression",1.5)
+    gmsh.model.geo.mesh.setTransfiniteCurve(boundaryLayerDividerLines[i],boundaryLayerNumCells,"Progression",boundaryLayerProgression)
 
 #Create boundary layer quadrilateral curve loops
 boundaryLayerQuadLoops = []
@@ -61,10 +66,10 @@ for i in range(0, len(boundaryLayerPoints)):
     gmsh.model.geo.mesh.setRecombine(2,boundaryLayerQuadSurfaces[i])
 
 #Create points for the volume boundary
-topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)
-topRight = gmsh.model.geo.addPoint(2, 1, 0, lc)
-bottomLeft = gmsh.model.geo.addPoint(-1, -1, 0, lc)
-bottomRight = gmsh.model.geo.addPoint(2, -1, 0, lc)
+topLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)
+topRight = gmsh.model.geo.addPoint(farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)
+bottomLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, -farFieldSize/2, 0, farFieldMeshSize)
+bottomRight = gmsh.model.geo.addPoint(farFieldSize/2+0.5, -farFieldSize/2, 0, farFieldMeshSize)
 
 #Create lines for the volume boundary
 top = gmsh.model.geo.addLine(topLeft, topRight)

@@ -63,6 +63,18 @@ lowerBLLines.reverse()
 #Create the boundary layer curve loop
 boundaryLayerLoop = gmsh.model.geo.addCurveLoop(lowerBLLines+upperBLLines)
 
+#Create lines to divide up boundary layer into quadrilaterals
+upperBLDivideLines = []
+lowerBLDivideLines = []
+for i in range(0, n+1):
+    upperBLDivideLines.append(gmsh.model.geo.addLine(upperBLPoints[i][1], upperPoints[i]))
+    if i<n:
+        lowerBLDivideLines.append(gmsh.model.geo.addLine(lowerBLPoints[i][1], lowerPoints[i]))
+    #else:
+        #lowerBLDivideLines.append(-gmsh.model.geo.addLine(upperBLPoints[i][1], lowerBLPoints[i][1]))
+#upperBLDivideLines.append(gmsh.model.geo.addLine(upperBLPoints[n][1], lowerBLPoints[n-1][1]))
+#lowerBLDivideLines.reverse()
+
 #Create points for the volume boundary
 topLeft = gmsh.model.geo.addPoint(-1, 1, 0, lc)
 topRight = gmsh.model.geo.addPoint(2, 1, 0, lc)

@@ -5,7 +5,7 @@ import math
 import aerofoil_scale
 
 #Parameters
-n = 25                          #Number points on the aerofoil surface
+n = 50                          #Number points on the aerofoil surface
 surfaceOrder = 2
 farFieldSize = 10               #Width and height of the far field volume boundary
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
@@ -13,10 +13,8 @@ boundaryLayerThickness = 0.2    #Thickness of the boundary layer
 boundaryLayerNumCells = 10      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
 boundaryLayerProgression = 1.3  #Growth rate of the cells in the boundary layer
 wakeLength = 6
-wakeStart = 1.5
-wakeEndThickness = 2
-wakeLengthPoints = 50
-wakeHeightPoints = 20
+wakeEndThickness = 0.2
+wakeLengthPoints = 100
 
 ################################################################################
 #   Aerofoil Geometry
@@ -43,6 +41,8 @@ for i in range(0, n*2):
         curvePoints.append(aerofoilPoints[k+j])
     aerofoilCurves.append(gmsh.model.geo.addSpline(curvePoints))
     gmsh.model.geo.mesh.setTransfiniteCurve(aerofoilCurves[i], 2)
+trailingEdgeLine = gmsh.model.geo.addLine(aerofoilPoints[0], aerofoilPoints[-1])
+gmsh.model.geo.mesh.setTransfiniteCurve(trailingEdgeLine, 2)
 
 #gmsh.model.geo.mesh.setTransfiniteCurve(aerofoilSpline, n)
 #upperTrailingEdgeLine = gmsh.model.geo.addLine(trailingEdgePoint, aerofoilPoints[0])
@@ -67,7 +67,7 @@ for i in range(0, numStraightPoints):
 for i in range(0, numCircPoints+1):
     angle = i*math.pi/numCircPoints
     print(angle)
-    boundaryLayerPoints.append(gmsh.model.geo.addPoint(-boundaryLayerThickness*math.sin(angle), boundaryLayerThickness*math.cos(angle), 0))
+    boundaryLayerPoints.append(gmsh.model.geo.addPoint(0.05-boundaryLayerThickness*math.sin(angle), boundaryLayerThickness*math.cos(angle), 0))
 for i in range(numCircPoints+numStraightPoints+1, n*2+1):
     j = i*surfaceOrder
     boundaryLayerPoints.append(gmsh.model.geo.addPoint(coords[j][0], -boundaryLayerThickness, 0))
@@ -111,28 +111,26 @@ for i in range(0, len(boundaryLayerQuadLoops)):
 ################################################################################
 
 #Create points for wake
-upperWakeStartPoint = gmsh.model.geo.addPoint(wakeStart, boundaryLayerThickness, 0)
-lowerWakeStartPoint = gmsh.model.geo.addPoint(wakeStart, -boundaryLayerThickness, 0)
-upperWakeEndPoint = gmsh.model.geo.addPoint(wakeStart+wakeLength, wakeEndThickness, 0)
-lowerWakeEndPoint = gmsh.model.geo.addPoint(wakeStart+wakeLength, -wakeEndThickness, 0)
+upperWakeStartPoint = boundaryLayerPoints[0]
+lowerWakeStartPoint = boundaryLayerPoints[-1]
+upperWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, wakeEndThickness, 0)
+lowerWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, -wakeEndThickness, 0)
 
 #Create lines for wake
 upperWakeLine = gmsh.model.geo.addLine(upperWakeEndPoint, upperWakeStartPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(upperWakeLine, wakeLengthPoints)
+gmsh.model.geo.mesh.setTransfiniteCurve(upperWakeLine, wakeLengthPoints, "Progression", -1.05)
 lowerWakeLine = gmsh.model.geo.addLine(lowerWakeStartPoint, lowerWakeEndPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(lowerWakeLine, wakeLengthPoints)
-leftWakeLine = gmsh.model.geo.addLine(upperWakeStartPoint, lowerWakeStartPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(leftWakeLine, wakeHeightPoints)
+gmsh.model.geo.mesh.setTransfiniteCurve(lowerWakeLine, wakeLengthPoints, "Progression", 1.05)
 rightWakeLine = gmsh.model.geo.addLine(lowerWakeEndPoint, upperWakeEndPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(rightWakeLine, wakeHeightPoints)
+gmsh.model.geo.mesh.setTransfiniteCurve(rightWakeLine, boundaryLayerNumCells*2)
 
 #Create curveloop for wake
-wakeLoop = gmsh.model.geo.addCurveLoop([upperWakeLine, leftWakeLine, lowerWakeLine, rightWakeLine])
+wakeLoop = gmsh.model.geo.addCurveLoop([upperWakeLine, -boundaryLayerDividerLines[0], trailingEdgeLine, boundaryLayerDividerLines[-1], lowerWakeLine, rightWakeLine])
 
 #Create surface for wake
 wakeSurface = gmsh.model.geo.addPlaneSurface([wakeLoop])
-gmsh.model.geo.mesh.setTransfiniteSurface(wakeSurface)
-gmsh.model.geo.mesh.setRecombine(2,wakeSurface)
+gmsh.model.geo.mesh.setTransfiniteSurface(wakeSurface, "Left", [upperWakeStartPoint, lowerWakeStartPoint, lowerWakeEndPoint, upperWakeEndPoint])
+gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
 
 #Create points for the volume boundary
 # topLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)

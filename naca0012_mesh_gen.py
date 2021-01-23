@@ -10,7 +10,7 @@ surfaceOrder = 2
 farFieldSize = 10               #Width and height of the far field volume boundary
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
 boundaryLayerThickness = 0.2    #Thickness of the boundary layer
-boundaryLayerNumCells = 10      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
+boundaryLayerNumCells = 15      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
 boundaryLayerProgression = 1.3  #Growth rate of the cells in the boundary layer
 wakeLength = 6
 wakeEndThickness = 0.2
@@ -66,7 +66,6 @@ for i in range(0, numStraightPoints):
     boundaryLayerPoints.append(gmsh.model.geo.addPoint(coords[j][0], boundaryLayerThickness, 0))
 for i in range(0, numCircPoints+1):
     angle = i*math.pi/numCircPoints
-    print(angle)
     boundaryLayerPoints.append(gmsh.model.geo.addPoint(0.05-boundaryLayerThickness*math.sin(angle), boundaryLayerThickness*math.cos(angle), 0))
 for i in range(numCircPoints+numStraightPoints+1, n*2+1):
     j = i*surfaceOrder
@@ -113,8 +112,8 @@ for i in range(0, len(boundaryLayerQuadLoops)):
 #Create points for wake
 upperWakeStartPoint = boundaryLayerPoints[0]
 lowerWakeStartPoint = boundaryLayerPoints[-1]
-upperWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, wakeEndThickness, 0)
-lowerWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, -wakeEndThickness, 0)
+upperWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, wakeEndThickness, 0, farFieldMeshSize)
+lowerWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, -wakeEndThickness, 0, farFieldMeshSize)
 
 #Create lines for wake
 upperWakeLine = gmsh.model.geo.addLine(upperWakeEndPoint, upperWakeStartPoint)
@@ -132,24 +131,33 @@ wakeSurface = gmsh.model.geo.addPlaneSurface([wakeLoop])
 gmsh.model.geo.mesh.setTransfiniteSurface(wakeSurface, "Left", [upperWakeStartPoint, lowerWakeStartPoint, lowerWakeEndPoint, upperWakeEndPoint])
 gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
 
-#Create points for the volume boundary
-# topLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)
-# topRight = gmsh.model.geo.addPoint(farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)
-# bottomLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, -farFieldSize/2, 0, farFieldMeshSize)
-# bottomRight = gmsh.model.geo.addPoint(farFieldSize/2+0.5, -farFieldSize/2, 0, farFieldMeshSize)
+################################################################################
+#   Far Field Geometry
+################################################################################
 
-#Create lines for the volume boundary
-# top = gmsh.model.geo.addLine(topLeft, topRight)
-# right = gmsh.model.geo.addLine(topRight, bottomRight)
-# bottom = gmsh.model.geo.addLine(bottomRight, bottomLeft)
-# left = gmsh.model.geo.addLine(bottomLeft, topLeft)
+#Create points for the far field
+topLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)
+topRight = gmsh.model.geo.addPoint(wakeLength+1, farFieldSize/2, 0, farFieldMeshSize)
+bottomLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, -farFieldSize/2, 0, farFieldMeshSize)
+bottomRight = gmsh.model.geo.addPoint(wakeLength+1, -farFieldSize/2, 0, farFieldMeshSize)
 
-#Create the curve loop for the volume boundary
-# volumeLoop = gmsh.model.geo.addCurveLoop([top, right, bottom, left])
+#Create lines for the far field
+top = gmsh.model.geo.addLine(topRight, topLeft)
+upperRight = gmsh.model.geo.addLine(upperWakeEndPoint, topRight)
+lowerRight = gmsh.model.geo.addLine(bottomRight, lowerWakeEndPoint)
+bottom = gmsh.model.geo.addLine(bottomLeft, bottomRight)
+left = gmsh.model.geo.addLine(topLeft, bottomLeft)
+farFieldLines = [top, left, bottom, lowerRight, -lowerWakeLine]
+for i in range(0, len(boundaryLayerLines)):
+    farFieldLines.append(-boundaryLayerLines[i])
+farFieldLines.append(-upperWakeLine)
+farFieldLines.append(upperRight)
+
+#Create the curve loop for the far field
+farFieldLoop = gmsh.model.geo.addCurveLoop(farFieldLines)
 
 #Create the surface
-#volumeSurface = gmsh.model.geo.addPlaneSurface([boundaryLayerLoop, volumeLoop])
-#volumeSurface = gmsh.model.geo.addPlaneSurface([volumeLoop,boundaryLayerLoop])
+farFieldSurface = gmsh.model.geo.addPlaneSurface([farFieldLoop])
 
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()

@@ -5,7 +5,6 @@ import aerofoil_scale
 
 #Parameters
 n = 25                          #Number of panels for each of the upper and lower surfaces of the aerofoil
-spacing = "cos"                 #Spacing type for aerofoil points
 farFieldSize = 10               #Width and height of the far field volume boundary
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
 boundaryLayerThickness = 0.2    #Thickness of the boundary layer
@@ -17,8 +16,12 @@ wakeEndThickness = 2
 wakeLengthPoints = 50
 wakeHeightPoints = 20
 
+################################################################################
+#   Aerofoil Geometry
+################################################################################
+
 #Get the coordinates of the aerofoil
-coords = naca_4_series_points.points(0, 0, 12, n, spacing)
+coords = naca_4_series_points.points(0, 0, 12, 100, "sin")
 
 #Initialize Gmsh and name the model
 gmsh.initialize()
@@ -27,16 +30,16 @@ gmsh.model.add("NACA0012")
 #Create the aerofoil points
 aerofoilPoints = []
 trailingEdgePoint = gmsh.model.geo.addPoint(1, 0, 0)
-aerofoilPoints.append(trailingEdgePoint)
 for i in range(1, len(coords)-1):
     aerofoilPoints.append(gmsh.model.geo.addPoint(coords[i][0], coords[i][1], 0))
-aerofoilPoints.append(trailingEdgePoint)
 
 #Create the aerofoil lines
 aerofoilSpline = gmsh.model.geo.addSpline(aerofoilPoints)
+upperTrailingEdgeLine = gmsh.model.geo.addLine(trailingEdgePoint, aerofoilPoints[0])
+lowerTrailingEdgeLine = gmsh.model.geo.addLine(aerofoilPoints[-1], trailingEdgePoint)
 
 #Create the aerofoil curve loop
-aerofoilLoop = gmsh.model.geo.addCurveLoop([aerofoilSpline])
+aerofoilLoop = gmsh.model.geo.addCurveLoop([upperTrailingEdgeLine, aerofoilSpline, lowerTrailingEdgeLine])
 
 #Create boundary layer points
 # leadingEdgeCircStartPoint = gmsh.model.geo.addPoint(0, 0.2, 0)

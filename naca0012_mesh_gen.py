@@ -4,15 +4,18 @@ import sys
 import math
 import aerofoil_scale
 
-#Parameters
+################################################################################
+#   Input Parameters
+################################################################################
+
 n = 50                          #Number points on the aerofoil surface
 surfaceOrder = 2
 farFieldSize = 10               #Width and height of the far field volume boundary
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
 boundaryLayerThickness = 0.2    #Thickness of the boundary layer
-boundaryLayerNumCells = 15      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
+boundaryLayerNumCells = 20      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
 boundaryLayerProgression = 1.3  #Growth rate of the cells in the boundary layer
-wakeLength = 6
+wakeLength = 10
 wakeEndThickness = 0.2
 wakeLengthPoints = 100
 
@@ -162,11 +165,21 @@ farFieldSurface = gmsh.model.geo.addPlaneSurface([farFieldLoop])
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()
 
+################################################################################
+#   Physical Groups
+################################################################################
+
 #Create physical groups
-# aerofoilGroup = gmsh.model.addPhysicalGroup(1, [aerofoilLoop])
-# gmsh.model.setPhysicalName(1, aerofoilGroup, "Aerofoil Surface")
-# volumeGroup = gmsh.model.addPhysicalGroup(1, [volumeLoop])
-# gmsh.model.setPhysicalName(1, volumeGroup, "Volume Boundary")
+aerofoilGroup = gmsh.model.addPhysicalGroup(1, aerofoilCurves+[trailingEdgeLine])
+gmsh.model.setPhysicalName(1, aerofoilGroup, "Aerofoil Boundary")
+farFieldGroup = gmsh.model.addPhysicalGroup(1, [top, left, bottom, lowerRight, rightWakeLine, upperRight])
+gmsh.model.setPhysicalName(1, farFieldGroup, "Far Field Boundary")
+fluidGroup = gmsh.model.addPhysicalGroup(2, boundaryLayerQuadSurfaces + [wakeSurface, farFieldSurface])
+gmsh.model.setPhysicalName(2, fluidGroup, "Fluid")
+
+################################################################################
+#   Output
+################################################################################
 
 #Set colours
 # for i in range(0, len(boundaryLayerQuadSurfaces)):
@@ -176,7 +189,7 @@ gmsh.model.geo.synchronize()
 
 #Generate and save mesh
 gmsh.model.mesh.generate(2)
-#gmsh.write("NACA0012.msh")
+gmsh.write("NACA0012.msh")
 
 #Visualize model
 if '-nopopup' not in sys.argv:

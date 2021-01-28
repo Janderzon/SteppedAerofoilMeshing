@@ -54,9 +54,9 @@ teLine = gmsh.model.geo.addLine(aerofoilPoints[-1], aerofoilPoints[0])
 teUpperSpline = gmsh.model.geo.addSpline(teUpperPoints)
 leSpline = gmsh.model.geo.addSpline(lePoints)
 teLowerSpline = gmsh.model.geo.addSpline(teLowerPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(teUpperSpline, 100, "Progression", 2)
-gmsh.model.geo.mesh.setTransfiniteCurve(leSpline, 100, "Bump", 2)
-gmsh.model.geo.mesh.setTransfiniteCurve(teLowerSpline, 100, "Progression", 2)
+gmsh.model.geo.mesh.setTransfiniteCurve(teUpperSpline, 100, "Progression", 1.01)
+gmsh.model.geo.mesh.setTransfiniteCurve(leSpline, 100, "Bump", 1.5)
+gmsh.model.geo.mesh.setTransfiniteCurve(teLowerSpline, 100, "Progression", -1.01)
 
 #Create the aerofoil curve loop
 aerofoilLoop = gmsh.model.geo.addCurveLoop([teUpperSpline, leSpline, teLowerSpline, teLine])
@@ -65,30 +65,37 @@ aerofoilLoop = gmsh.model.geo.addCurveLoop([teUpperSpline, leSpline, teLowerSpli
 #   Boundary Layer Geometry
 ################################################################################
 
-# #Create boundary layer points
-# blTopRightPoint = gmsh.model.geo.addPoint(1, boundaryLayerThickness, 0)
-# blBottomRightPoint = gmsh.model.geo.addPoint(1, -boundaryLayerThickness, 0)
-# blTopLeftPoint = gmsh.model.geo.addPoint(0, boundaryLayerThickness, 0)
-# blBottomLeftPoint = gmsh.model.geo.addPoint(0, -boundaryLayerThickness, 0)
+#Create boundary layer points
+blTopRightPoint = gmsh.model.geo.addPoint(1, boundaryLayerThickness, 0)
+blBottomRightPoint = gmsh.model.geo.addPoint(1, -boundaryLayerThickness, 0)
+blTopMidPoint = gmsh.model.geo.addPoint(coords[thickestIndex][0], boundaryLayerThickness, 0)
+blBottomMidPoint = gmsh.model.geo.addPoint(coords[thickestIndex][0], -boundaryLayerThickness, 0)
 
-# #Create the boundary layer lines
-# blTopLine = gmsh.model.geo.addLine(blTopRightPoint, blTopLeftPoint)
-# blBottomLine = gmsh.model.geo.addLine(blBottomLeftPoint, blBottomRightPoint)
-# blTopRightLine = gmsh.model.geo.addLine(aerofoilPoints[0], blTopRightPoint)
-# blBottomRightLine = gmsh.model.geo.addLine(blBottomRightPoint, aerofoilPoints[-1])
-# blLeftSemiCircle = gmsh.model.geo.addCircleArc(blTopLeftPoint, aerofoilPoints[n], blBottomLeftPoint)
-# blCurve = gmsh.model.geo.addCompoundSpline([blTopLine, blLeftSemiCircle, blBottomLine], 10)
-# gmsh.model.geo.mesh.setTransfiniteCurve(blTopRightLine, boundaryLayerNumCells, "Progression", boundaryLayerProgression)
-# gmsh.model.geo.mesh.setTransfiniteCurve(blBottomRightLine, boundaryLayerNumCells, "Progression", -boundaryLayerProgression)
-# gmsh.model.geo.mesh.setTransfiniteCurve(blCurve, 100)
+#Create the boundary layer lines
+blTopTELine = gmsh.model.geo.addLine(blTopRightPoint, blTopMidPoint)
+blBottomTELine = gmsh.model.geo.addLine(blBottomMidPoint, blBottomRightPoint)
+blTopRightLine = gmsh.model.geo.addLine(aerofoilPoints[0], blTopRightPoint)
+blBottomRightLine = gmsh.model.geo.addLine(blBottomRightPoint, aerofoilPoints[-1])
+blTopMidLine = gmsh.model.geo.addLine(blTopMidPoint, aerofoilPoints[thickestIndex])
+blBottomMidLine = gmsh.model.geo.addLine(aerofoilPoints[len(coords)-thickestIndex-1], blBottomMidPoint)
+gmsh.model.geo.mesh.setTransfiniteCurve(blTopTELine, 100)
+gmsh.model.geo.mesh.setTransfiniteCurve(blBottomTELine, 100)
+gmsh.model.geo.mesh.setTransfiniteCurve(blTopRightLine, boundaryLayerNumCells, "Progression", boundaryLayerProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blBottomRightLine, boundaryLayerNumCells, "Progression", -boundaryLayerProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blTopMidLine, boundaryLayerNumCells, "Progression", -boundaryLayerProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blBottomMidLine, boundaryLayerNumCells, "Progression", boundaryLayerProgression)
 
-# #Create boundary layer curve loop
-# blLoop = gmsh.model.geo.addCurveLoop([blCurve, blBottomRightLine, -aerofoilSpline, blTopRightLine])
+#Create boundary layer curve loop
+blTopTELoop = gmsh.model.geo.addCurveLoop([blTopTELine, blTopMidLine, -teUpperSpline, blTopRightLine])
+blBottomTELoop = gmsh.model.geo.addCurveLoop([-teLowerSpline, blBottomMidLine, blBottomTELine, blBottomRightLine])
 
-# #Create boundary layer surface
-# blSurface = gmsh.model.geo.addPlaneSurface([blLoop])
-# gmsh.model.geo.mesh.setTransfiniteSurface(blSurface)
-# gmsh.model.geo.mesh.setRecombine(2, blSurface)
+#Create boundary layer surfaces
+blTopTESurface = gmsh.model.geo.addPlaneSurface([blTopTELoop])
+blBottomTESurface = gmsh.model.geo.addPlaneSurface([blBottomTELoop])
+gmsh.model.geo.mesh.setTransfiniteSurface(blTopTESurface)
+gmsh.model.geo.mesh.setTransfiniteSurface(blBottomTESurface)
+gmsh.model.geo.mesh.setRecombine(2, blTopTESurface)
+gmsh.model.geo.mesh.setRecombine(2, blBottomTESurface)
 
 ################################################################################
 #   Wake Geometry

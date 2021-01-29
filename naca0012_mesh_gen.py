@@ -1,7 +1,6 @@
 import naca_4_series_points
 import gmsh
 import sys
-import math
 
 ################################################################################
 #   Input Parameters
@@ -67,9 +66,6 @@ teLowerSpline = gmsh.model.geo.addSpline(teLowerPoints)
 gmsh.model.geo.mesh.setTransfiniteCurve(teUpperSpline, blTENumPoints, "Progression", blTEProgression)
 gmsh.model.geo.mesh.setTransfiniteCurve(leSpline, blLENumPoints, "Bump", blLEBump)
 gmsh.model.geo.mesh.setTransfiniteCurve(teLowerSpline, blTENumPoints, "Progression", -blTEProgression)
-
-#Create the aerofoil curve loop
-aerofoilLoop = gmsh.model.geo.addCurveLoop([teUpperSpline, leSpline, teLowerSpline, teLine])
 
 ################################################################################
 #   Boundary Layer Geometry
@@ -183,12 +179,12 @@ gmsh.model.geo.synchronize()
 ################################################################################
 
 #Create physical groups
-#aerofoilGroup = gmsh.model.addPhysicalGroup(1, [upperAerofoilSpline, lowerAerofoilSpline, trailingEdgeLine])
-#gmsh.model.setPhysicalName(1, aerofoilGroup, "aerofoilboundary")
-#farFieldGroup = gmsh.model.addPhysicalGroup(1, farFieldLines)
-#gmsh.model.setPhysicalName(1, farFieldGroup, "farfieldboundary")
-#fluidGroup = gmsh.model.addPhysicalGroup(2, [farFieldSurface])
-#gmsh.model.setPhysicalName(2, fluidGroup, "fluid")
+aerofoilGroup = gmsh.model.addPhysicalGroup(1, [teUpperSpline, leSpline, teLowerSpline, teLine])
+gmsh.model.setPhysicalName(1, aerofoilGroup, "aerofoilwall")
+farFieldGroup = gmsh.model.addPhysicalGroup(1, [ffTopLine, ffLeftLine, ffBottomLine, ffBottomRightLine, wakeRightLine, ffTopRightLine])
+gmsh.model.setPhysicalName(1, farFieldGroup, "farfieldboundary")
+fluidGroup = gmsh.model.addPhysicalGroup(2, [farFieldSurface, blLESurface, blTopTESurface, blBottomTESurface, wakeSurface])
+gmsh.model.setPhysicalName(2, fluidGroup, "fluid")
 
 ################################################################################
 #   Output

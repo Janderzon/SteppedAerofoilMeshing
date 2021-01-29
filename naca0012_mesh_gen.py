@@ -8,9 +8,6 @@ import math
 ################################################################################
 
 n = 100                         #Number points on the aerofoil surface
-farFieldSize = 10               #Width and height of the far field volume boundary
-farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
-
 blTEProgression = 1.02
 blTENumPoints = 50
 blLEBump = 5
@@ -22,6 +19,10 @@ wakeLength = 10
 wakeEndThickness = 0.2
 wakeNumPoints = 80
 wakeProgression = 1.05
+ffHeight = 8
+ffHorzOffset = 3
+ffHeightPoints = 10
+ffWidthPoints = 20
 
 ################################################################################
 #   Aerofoil Geometry
@@ -143,29 +144,28 @@ gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
 ################################################################################
 
 #Create points for the far field
-# topLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, farFieldSize/2, 0, farFieldMeshSize)
-# topRight = gmsh.model.geo.addPoint(wakeLength+1, farFieldSize/2, 0, farFieldMeshSize)
-# bottomLeft = gmsh.model.geo.addPoint(-farFieldSize/2+0.5, -farFieldSize/2, 0, farFieldMeshSize)
-# bottomRight = gmsh.model.geo.addPoint(wakeLength+1, -farFieldSize/2, 0, farFieldMeshSize)
+ffTopLeftPoint = gmsh.model.geo.addPoint(-ffHorzOffset, ffHeight/2, 0)
+ffTopRightPoint = gmsh.model.geo.addPoint(wakeLength+1, ffHeight/2, 0)
+ffBottomLeftPoint = gmsh.model.geo.addPoint(-ffHorzOffset, -ffHeight/2, 0)
+ffBottomRightPoint = gmsh.model.geo.addPoint(wakeLength+1, -ffHeight/2, 0)
 
 #Create lines for the far field
-#op = gmsh.model.geo.addLine(topRight, topLeft)
-#upperRight = gmsh.model.geo.addLine(upperWakeEndPoint, topRight)
-#lowerRight = gmsh.model.geo.addLine(bottomRight, lowerWakeEndPoint)
-# right = gmsh.model.geo.addLine(bottomRight, topRight)
-# bottom = gmsh.model.geo.addLine(bottomLeft, bottomRight)
-# left = gmsh.model.geo.addLine(topLeft, bottomLeft)
-# farFieldLines = [top, left, bottom, right]
-# for i in range(0, len(boundaryLayerLines)):
-#     farFieldLines.append(-boundaryLayerLines[i])
-# farFieldLines.append(-upperWakeLine)
-# farFieldLines.append(upperRight)
+ffTopLine = gmsh.model.geo.addLine(ffTopRightPoint, ffTopLeftPoint)
+ffLeftLine = gmsh.model.geo.addLine(ffTopLeftPoint, ffBottomLeftPoint)
+ffBottomLine = gmsh.model.geo.addLine(ffBottomLeftPoint, ffBottomRightPoint)
+ffTopRightLine = gmsh.model.geo.addLine(wakeTopRightPoint, ffTopRightPoint)
+ffBottomRightLine = gmsh.model.geo.addLine(ffBottomRightPoint, wakeBottomRightPoint)
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopLine, ffWidthPoints)
+gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, ffHeightPoints)
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomLine, ffWidthPoints)
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffHeightPoints/2))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffHeightPoints/2))
 
 #Create the curve loop for the far field
-#farFieldLoop = gmsh.model.geo.addCurveLoop(farFieldLines)
+farFieldLoop = gmsh.model.geo.addCurveLoop([ffTopLine, ffLeftLine, ffBottomLine, ffBottomRightLine, -wakeBottomLine, -blBottomTELine, -blLESpline, -blTopTELine, -wakeTopLine, ffTopRightLine])
 
 #Create the surface
-#farFieldSurface = gmsh.model.geo.addPlaneSurface([farFieldLoop, aerofoilLoop])
+farFieldSurface = gmsh.model.geo.addPlaneSurface([farFieldLoop])
 
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()

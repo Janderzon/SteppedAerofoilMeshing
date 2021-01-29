@@ -8,20 +8,20 @@ import sys
 
 n = 100                         #Number points on the aerofoil surface
 blTEProgression = 1.02
-blTENumPoints = 50
+blTENumPoints = 12
 blLEBump = 5
-blLENumPoints = 100
+blLENumPoints = 25
 blThickness = 0.2
 blThicknessProgression = 1.1
-blThicknessNumPoints = 15
+blThicknessNumPoints = 10
 wakeLength = 10
 wakeEndThickness = 0.2
-wakeNumPoints = 80
+wakeNumPoints = 40
 wakeProgression = 1.05
 ffHeight = 8
 ffHorzOffset = 3
-ffHeightPoints = 10
-ffWidthPoints = 20
+ffHeightPoints = 5
+ffWidthPoints = 10
 
 ################################################################################
 #   Initialize Gmsh
@@ -197,6 +197,9 @@ gmsh.model.setPhysicalName(2, fluidGroup, "fluid")
 # gmsh.option.setNumber("General.BackgroundGradient", 0)
 
 #Generate and save mesh
+gmsh.option.setNumber("Mesh.ElementOrder", 3)
+gmsh.option.setNumber("Mesh.HighOrderOptimize", 3)
+gmsh.option.setNumber("Mesh.NumSubEdges", 10)
 gmsh.model.mesh.generate(2)
 gmsh.write("NACA0012.msh")
 

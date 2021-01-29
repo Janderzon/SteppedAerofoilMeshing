@@ -8,12 +8,17 @@ import math
 ################################################################################
 
 n = 100                         #Number points on the aerofoil surface
-surfaceOrder = 1
 farFieldSize = 10               #Width and height of the far field volume boundary
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
-boundaryLayerThickness = 0.2    #Thickness of the boundary layer
-boundaryLayerNumCells = 20      #Number of cells in the boundary layer in the direction normal to the aerofoil surface
-boundaryLayerProgression = 1.3  #Growth rate of the cells in the boundary layer
+
+blTEProgression = 1.02
+blTENumPoints = 100
+blLEBump = 5
+blLENumPoints = 150
+blThickness = 0.2
+blThicknessProgression = 1.1
+blThicknessNumPoints = 30
+
 wakeLength = 10
 wakeEndThickness = 0.2
 wakeLengthPoints = 100
@@ -23,7 +28,7 @@ wakeLengthPoints = 100
 ################################################################################
 
 #Get the coordinates of the aerofoil
-coords = naca_4_series_points.points(0, 0, 12, n*surfaceOrder, "sin")
+coords = naca_4_series_points.points(0, 0, 12, n, "sin")
 
 #Initialize Gmsh and name the model
 gmsh.initialize()
@@ -54,9 +59,9 @@ teLine = gmsh.model.geo.addLine(aerofoilPoints[-1], aerofoilPoints[0])
 teUpperSpline = gmsh.model.geo.addSpline(teUpperPoints)
 leSpline = gmsh.model.geo.addSpline(lePoints)
 teLowerSpline = gmsh.model.geo.addSpline(teLowerPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(teUpperSpline, 100, "Progression", 1.01)
-gmsh.model.geo.mesh.setTransfiniteCurve(leSpline, 100, "Bump", 1.5)
-gmsh.model.geo.mesh.setTransfiniteCurve(teLowerSpline, 100, "Progression", -1.01)
+gmsh.model.geo.mesh.setTransfiniteCurve(teUpperSpline, blTENumPoints, "Progression", blTEProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(leSpline, blLENumPoints, "Bump", blLEBump)
+gmsh.model.geo.mesh.setTransfiniteCurve(teLowerSpline, blTENumPoints, "Progression", -blTEProgression)
 
 #Create the aerofoil curve loop
 aerofoilLoop = gmsh.model.geo.addCurveLoop([teUpperSpline, leSpline, teLowerSpline, teLine])
@@ -66,10 +71,13 @@ aerofoilLoop = gmsh.model.geo.addCurveLoop([teUpperSpline, leSpline, teLowerSpli
 ################################################################################
 
 #Create boundary layer points
-blTopRightPoint = gmsh.model.geo.addPoint(1, boundaryLayerThickness, 0)
-blBottomRightPoint = gmsh.model.geo.addPoint(1, -boundaryLayerThickness, 0)
-blTopMidPoint = gmsh.model.geo.addPoint(coords[thickestIndex][0], boundaryLayerThickness, 0)
-blBottomMidPoint = gmsh.model.geo.addPoint(coords[thickestIndex][0], -boundaryLayerThickness, 0)
+blTopRightPoint = gmsh.model.geo.addPoint(1, blThickness, 0)
+blBottomRightPoint = gmsh.model.geo.addPoint(1, -blThickness, 0)
+blTopMidPoint = gmsh.model.geo.addPoint(coords[thickestIndex][0], blThickness, 0)
+blBottomMidPoint = gmsh.model.geo.addPoint(coords[thickestIndex][0], -blThickness, 0)
+blNosePoints = []
+for i in range(thickestIndex, len(coords)-thickestIndex):
+    blNosePoints.append(gmsh.model.geo.addPoint(coords[i][0], coords[i][1], 0))
 
 #Create the boundary layer lines
 blTopTELine = gmsh.model.geo.addLine(blTopRightPoint, blTopMidPoint)
@@ -78,23 +86,30 @@ blTopRightLine = gmsh.model.geo.addLine(aerofoilPoints[0], blTopRightPoint)
 blBottomRightLine = gmsh.model.geo.addLine(blBottomRightPoint, aerofoilPoints[-1])
 blTopMidLine = gmsh.model.geo.addLine(blTopMidPoint, aerofoilPoints[thickestIndex])
 blBottomMidLine = gmsh.model.geo.addLine(aerofoilPoints[len(coords)-thickestIndex-1], blBottomMidPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(blTopTELine, 100)
-gmsh.model.geo.mesh.setTransfiniteCurve(blBottomTELine, 100)
-gmsh.model.geo.mesh.setTransfiniteCurve(blTopRightLine, boundaryLayerNumCells, "Progression", boundaryLayerProgression)
-gmsh.model.geo.mesh.setTransfiniteCurve(blBottomRightLine, boundaryLayerNumCells, "Progression", -boundaryLayerProgression)
-gmsh.model.geo.mesh.setTransfiniteCurve(blTopMidLine, boundaryLayerNumCells, "Progression", -boundaryLayerProgression)
-gmsh.model.geo.mesh.setTransfiniteCurve(blBottomMidLine, boundaryLayerNumCells, "Progression", boundaryLayerProgression)
+blLESpline = gmsh.model.geo.addSpline(blNosePoints)
+gmsh.model.geo.dilate([(1, blLESpline)], coords[thickestIndex][0], 0, 0, 1+blThickness/coords[thickestIndex][0], blThickness/coords[thickestIndex][1], 1)
+gmsh.model.geo.mesh.setTransfiniteCurve(blTopTELine, blTENumPoints, "Progression", blTEProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blBottomTELine, blTENumPoints, "Progression", -blTEProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blTopRightLine, blThicknessNumPoints, "Progression", blThicknessProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blBottomRightLine, blThicknessNumPoints, "Progression", -blThicknessProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blTopMidLine, blThicknessNumPoints, "Progression", -blThicknessProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blBottomMidLine, blThicknessNumPoints, "Progression", blThicknessProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(blLESpline, blLENumPoints, "Bump", blLEBump)
 
-#Create boundary layer curve loop
+#Create boundary layer curve loops
 blTopTELoop = gmsh.model.geo.addCurveLoop([blTopTELine, blTopMidLine, -teUpperSpline, blTopRightLine])
+blLELoop = gmsh.model.geo.addCurveLoop([blLESpline, -blBottomMidLine, -leSpline, -blTopMidLine])
 blBottomTELoop = gmsh.model.geo.addCurveLoop([-teLowerSpline, blBottomMidLine, blBottomTELine, blBottomRightLine])
 
 #Create boundary layer surfaces
 blTopTESurface = gmsh.model.geo.addPlaneSurface([blTopTELoop])
+blLESurface = gmsh.model.geo.addPlaneSurface([blLELoop])
 blBottomTESurface = gmsh.model.geo.addPlaneSurface([blBottomTELoop])
 gmsh.model.geo.mesh.setTransfiniteSurface(blTopTESurface)
+gmsh.model.geo.mesh.setTransfiniteSurface(blLESurface)
 gmsh.model.geo.mesh.setTransfiniteSurface(blBottomTESurface)
 gmsh.model.geo.mesh.setRecombine(2, blTopTESurface)
+gmsh.model.geo.mesh.setRecombine(2, blLESurface)
 gmsh.model.geo.mesh.setRecombine(2, blBottomTESurface)
 
 ################################################################################

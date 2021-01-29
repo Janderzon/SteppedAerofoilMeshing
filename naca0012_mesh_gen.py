@@ -12,16 +12,16 @@ farFieldSize = 10               #Width and height of the far field volume bounda
 farFieldMeshSize = 1            #Target mesh size at the far field volume boundary
 
 blTEProgression = 1.02
-blTENumPoints = 100
+blTENumPoints = 50
 blLEBump = 5
-blLENumPoints = 150
+blLENumPoints = 100
 blThickness = 0.2
 blThicknessProgression = 1.1
-blThicknessNumPoints = 30
-
+blThicknessNumPoints = 15
 wakeLength = 10
 wakeEndThickness = 0.2
-wakeLengthPoints = 100
+wakeNumPoints = 80
+wakeProgression = 1.05
 
 ################################################################################
 #   Aerofoil Geometry
@@ -116,27 +116,27 @@ gmsh.model.geo.mesh.setRecombine(2, blBottomTESurface)
 #   Wake Geometry
 ################################################################################
 
-# #Create points for wake
-# upperWakeStartPoint = boundaryLayerPoints[0]
-# lowerWakeStartPoint = boundaryLayerPoints[-1]
-# upperWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, wakeEndThickness, 0, farFieldMeshSize)
-# lowerWakeEndPoint = gmsh.model.geo.addPoint(1+wakeLength, -wakeEndThickness, 0, farFieldMeshSize)
+#Create points for wake
+wakeTopLeftPoint = blTopRightPoint
+wakeBottomLeftPoint = blBottomRightPoint
+wakeTopRightPoint = gmsh.model.geo.addPoint(1+wakeLength, wakeEndThickness, 0)
+wakeBottomRightPoint = gmsh.model.geo.addPoint(1+wakeLength, -wakeEndThickness, 0)
 
-# #Create lines for wake
-# upperWakeLine = gmsh.model.geo.addLine(upperWakeEndPoint, upperWakeStartPoint)
-# gmsh.model.geo.mesh.setTransfiniteCurve(upperWakeLine, wakeLengthPoints, "Progression", -1.05)
-# lowerWakeLine = gmsh.model.geo.addLine(lowerWakeStartPoint, lowerWakeEndPoint)
-# gmsh.model.geo.mesh.setTransfiniteCurve(lowerWakeLine, wakeLengthPoints, "Progression", 1.05)
-# rightWakeLine = gmsh.model.geo.addLine(lowerWakeEndPoint, upperWakeEndPoint)
-# gmsh.model.geo.mesh.setTransfiniteCurve(rightWakeLine, boundaryLayerNumCells*2)
+#Create lines for wake
+wakeTopLine = gmsh.model.geo.addLine(wakeTopRightPoint, wakeTopLeftPoint)
+wakeBottomLine = gmsh.model.geo.addLine(wakeBottomLeftPoint, wakeBottomRightPoint)
+wakeRightLine = gmsh.model.geo.addLine(wakeBottomRightPoint, wakeTopRightPoint)
+gmsh.model.geo.mesh.setTransfiniteCurve(wakeTopLine, wakeNumPoints, "Progression", -wakeProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(wakeBottomLine, wakeNumPoints, "Progression", wakeProgression)
+gmsh.model.geo.mesh.setTransfiniteCurve(wakeRightLine, blThicknessNumPoints*2)
 
-# #Create curveloop for wake
-# wakeLoop = gmsh.model.geo.addCurveLoop([upperWakeLine, -boundaryLayerDividerLines[0], trailingEdgeLine, boundaryLayerDividerLines[-1], lowerWakeLine, rightWakeLine])
+#Create curveloop for wake
+wakeLoop = gmsh.model.geo.addCurveLoop([wakeTopLine, -blTopRightLine, -teLine, -blBottomRightLine, wakeBottomLine, wakeRightLine])
 
-# #Create surface for wake
-# wakeSurface = gmsh.model.geo.addPlaneSurface([wakeLoop])
-# gmsh.model.geo.mesh.setTransfiniteSurface(wakeSurface, "Left", [upperWakeStartPoint, lowerWakeStartPoint, lowerWakeEndPoint, upperWakeEndPoint])
-# gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
+#Create surface for wake
+wakeSurface = gmsh.model.geo.addPlaneSurface([wakeLoop])
+gmsh.model.geo.mesh.setTransfiniteSurface(wakeSurface, "Left", [wakeTopRightPoint, wakeTopLeftPoint, wakeBottomLeftPoint, wakeBottomRightPoint])
+gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
 
 ################################################################################
 #   Far Field Geometry

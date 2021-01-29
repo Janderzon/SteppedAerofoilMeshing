@@ -25,15 +25,19 @@ ffHeightPoints = 10
 ffWidthPoints = 20
 
 ################################################################################
+#   Initialize Gmsh
+################################################################################
+
+#Initialize Gmsh and name the model
+gmsh.initialize()
+gmsh.model.add("NACA0012")
+
+################################################################################
 #   Aerofoil Geometry
 ################################################################################
 
 #Get the coordinates of the aerofoil
 coords = naca_4_series_points.points(0, 0, 12, n, "sin")
-
-#Initialize Gmsh and name the model
-gmsh.initialize()
-gmsh.model.add("NACA0012")
 
 #Create the aerofoil points
 aerofoilPoints = []
@@ -166,6 +170,10 @@ farFieldLoop = gmsh.model.geo.addCurveLoop([ffTopLine, ffLeftLine, ffBottomLine,
 
 #Create the surface
 farFieldSurface = gmsh.model.geo.addPlaneSurface([farFieldLoop])
+
+################################################################################
+#   Synchronize
+################################################################################
 
 #Synchronize CAD entities with the Gmsh model
 gmsh.model.geo.synchronize()

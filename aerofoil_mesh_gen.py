@@ -1,29 +1,38 @@
 import gmsh
 import sys
 import numpy as np
+import math
 
 ################################################################################
 #   Input Parameters
 ################################################################################
 
-n = 100                         #Number points on the aerofoil surface
 blTEProgression = 1.1
-blTENumPoints = 25
-blLEBump = 10
-blLENumPoints = 50
+blTENumPoints = 15
+blLEBump = 5
+blLENumPoints = 31
 blThickness = 0.2
 blThicknessProgression = 1.2
-blThicknessNumPoints = 20
 wakeLength = 20
-wakeEndThickness = 0.2
+wakeEndThickness = 3
 wakeNumPoints = 50
 wakeProgression = 1.1
 ffHeight = 20
 ffHorzOffset = 10
-ffHeightPoints = 8
-ffHeightBump = 5
-ffWidthPoints = 10
+ffHeightPoints = 15
+ffWidthPoints = 20
 aerofoilName = "NACA63(3)-018"
+nearWallCellThickness = 0.01 
+
+################################################################################
+#   Calculate Useful Parameters
+################################################################################
+
+N = math.log(1-blThickness*(1-blThicknessProgression)/nearWallCellThickness)/math.log(blThicknessProgression)
+blThicknessNumPoints = round(N)+1
+nearWallCellThicknessRounded = blThickness*(1-blThicknessProgression)/(1-blThicknessProgression**blThicknessNumPoints)
+print("Cell size near wall: "+str(nearWallCellThicknessRounded))
+print("Number of boundary layer points normal to wall: "+str(blThicknessNumPoints))
 
 ################################################################################
 #   Initialize Gmsh
@@ -122,8 +131,8 @@ gmsh.model.geo.mesh.setRecombine(2, blBottomTESurface)
 #Create points for wake
 wakeTopLeftPoint = blTopRightPoint
 wakeBottomLeftPoint = blBottomRightPoint
-wakeTopRightPoint = gmsh.model.geo.addPoint(1+wakeLength, wakeEndThickness, 0)
-wakeBottomRightPoint = gmsh.model.geo.addPoint(1+wakeLength, -wakeEndThickness, 0)
+wakeTopRightPoint = gmsh.model.geo.addPoint(wakeLength, wakeEndThickness, 0)
+wakeBottomRightPoint = gmsh.model.geo.addPoint(wakeLength, -wakeEndThickness, 0)
 
 #Create lines for wake
 wakeTopLine = gmsh.model.geo.addLine(wakeTopRightPoint, wakeTopLeftPoint)
@@ -147,9 +156,9 @@ gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
 
 #Create points for the far field
 ffTopLeftPoint = gmsh.model.geo.addPoint(-ffHorzOffset, ffHeight/2, 0)
-ffTopRightPoint = gmsh.model.geo.addPoint(wakeLength+1, ffHeight/2, 0)
+ffTopRightPoint = gmsh.model.geo.addPoint(wakeLength, ffHeight/2, 0)
 ffBottomLeftPoint = gmsh.model.geo.addPoint(-ffHorzOffset, -ffHeight/2, 0)
-ffBottomRightPoint = gmsh.model.geo.addPoint(wakeLength+1, -ffHeight/2, 0)
+ffBottomRightPoint = gmsh.model.geo.addPoint(wakeLength, -ffHeight/2, 0)
 
 #Create lines for the far field
 ffTopLine = gmsh.model.geo.addLine(ffTopRightPoint, ffTopLeftPoint)
@@ -158,10 +167,10 @@ ffBottomLine = gmsh.model.geo.addLine(ffBottomLeftPoint, ffBottomRightPoint)
 ffTopRightLine = gmsh.model.geo.addLine(wakeTopRightPoint, ffTopRightPoint)
 ffBottomRightLine = gmsh.model.geo.addLine(ffBottomRightPoint, wakeBottomRightPoint)
 gmsh.model.geo.mesh.setTransfiniteCurve(ffTopLine, ffWidthPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, ffHeightPoints, "Bump", ffHeightBump)
+gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, ffHeightPoints)
 gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomLine, ffWidthPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffHeightPoints/2))
-gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffHeightPoints/2))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffHeightPoints/2-ffHeightPoints*wakeEndThickness/ffHeight/2))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffHeightPoints/2-ffHeightPoints*wakeEndThickness/ffHeight/2))
 
 #Create the curve loop for the far field
 farFieldLoop = gmsh.model.geo.addCurveLoop([ffTopLine, ffLeftLine, ffBottomLine, ffBottomRightLine, -wakeBottomLine, -blBottomTELine, -blLESpline, -blTopTELine, -wakeTopLine, ffTopRightLine])

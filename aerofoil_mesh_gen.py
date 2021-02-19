@@ -1,6 +1,6 @@
-import naca_4_series_points
 import gmsh
 import sys
+import numpy as np
 
 ################################################################################
 #   Input Parameters
@@ -23,6 +23,7 @@ ffHorzOffset = 10
 ffHeightPoints = 8
 ffHeightBump = 5
 ffWidthPoints = 10
+aerofoilName = "NACA63(3)-018"
 
 ################################################################################
 #   Initialize Gmsh
@@ -30,21 +31,20 @@ ffWidthPoints = 10
 
 #Initialize Gmsh and name the model
 gmsh.initialize()
-gmsh.model.add("Aerofoil")
+gmsh.model.add(aerofoilName)
 
 ################################################################################
 #   Aerofoil Geometry
 ################################################################################
 
 #Get the coordinates of the aerofoil
-coords = naca_4_series_points.points(0, 0, 12, n, "sin")
+aerofoilData = np.loadtxt(aerofoilName+".txt")
+coords = aerofoilData
 
 #Create the aerofoil points
 aerofoilPoints = []
-aerofoilPoints.append(gmsh.model.geo.addPoint(1, 0, 0))
-for i in range(1, len(coords)-1):
+for i in range(0, len(coords)):
     aerofoilPoints.append(gmsh.model.geo.addPoint(coords[i][0], coords[i][1], 0))
-aerofoilPoints.append(aerofoilPoints[0])
 
 #Divide up the aerofoil point into leading and upper and lower trailing edges
 thickestIndex = 0
@@ -203,7 +203,7 @@ gmsh.option.setNumber("Mesh.ElementOrder", 3)
 gmsh.option.setNumber("Mesh.HighOrderOptimize", 3)
 gmsh.option.setNumber("Mesh.NumSubEdges", 10)
 gmsh.model.mesh.generate(2)
-gmsh.write("NACA0012.msh")
+gmsh.write(aerofoilName+".msh")
 
 #Visualize model
 if '-nopopup' not in sys.argv:

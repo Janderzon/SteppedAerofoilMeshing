@@ -8,21 +8,20 @@ import math
 ################################################################################
 
 blTEProgression = 1.1
-blTENumPoints = 15
+blTENumPoints = 10
 blLEBump = 5
-blLENumPoints = 31
+blLENumPoints = 21
 blThickness = 0.2
 blThicknessProgression = 1.2
 wakeLength = 20
 wakeEndThickness = 3
-wakeNumPoints = 50
+wakeNumPoints = 40
 wakeProgression = 1.1
 ffHeight = 20
 ffHorzOffset = 10
-ffHeightPoints = 15
-ffWidthPoints = 20
-aerofoilName = "NACA63(3)-018"
-nearWallCellThickness = 0.01 
+ffPointsPerLength = 0.5
+aerofoilName = "NACA63-009"
+nearWallCellThickness = 0.02
 
 ################################################################################
 #   Calculate Useful Parameters
@@ -47,7 +46,7 @@ gmsh.model.add(aerofoilName)
 ################################################################################
 
 #Get the coordinates of the aerofoil
-aerofoilData = np.loadtxt(aerofoilName+".txt")
+aerofoilData = np.loadtxt(aerofoilName+".dat")
 coords = aerofoilData
 
 #Create the aerofoil points
@@ -166,11 +165,11 @@ ffLeftLine = gmsh.model.geo.addLine(ffTopLeftPoint, ffBottomLeftPoint)
 ffBottomLine = gmsh.model.geo.addLine(ffBottomLeftPoint, ffBottomRightPoint)
 ffTopRightLine = gmsh.model.geo.addLine(wakeTopRightPoint, ffTopRightPoint)
 ffBottomRightLine = gmsh.model.geo.addLine(ffBottomRightPoint, wakeBottomRightPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffTopLine, ffWidthPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, ffHeightPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomLine, ffWidthPoints)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffHeightPoints/2-ffHeightPoints*wakeEndThickness/ffHeight/2))
-gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffHeightPoints/2-ffHeightPoints*wakeEndThickness/ffHeight/2))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopLine, round(ffPointsPerLength*(ffHorzOffset+wakeLength)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, round(ffPointsPerLength*ffHeight))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomLine, round(ffPointsPerLength*(ffHorzOffset+wakeLength)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffPointsPerLength*(ffHeight/2-wakeEndThickness/2)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffPointsPerLength*(ffHeight/2-wakeEndThickness/2)))
 
 #Create the curve loop for the far field
 farFieldLoop = gmsh.model.geo.addCurveLoop([ffTopLine, ffLeftLine, ffBottomLine, ffBottomRightLine, -wakeBottomLine, -blBottomTELine, -blLESpline, -blTopTELine, -wakeTopLine, ffTopRightLine])

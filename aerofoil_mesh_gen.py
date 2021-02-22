@@ -13,12 +13,10 @@ blLEBump = 5
 blLENumPoints = 21
 blThickness = 0.2
 blThicknessProgression = 1.2
-wakeLength = 20
 wakeEndThickness = 3
 wakeNumPoints = 40
 wakeProgression = 1.1
-ffHeight = 20
-ffHorzOffset = 10
+ffBoundaryScaling = 10
 ffPointsPerLength = 0.5
 aerofoilName = "NACA63-009"
 nearWallCellThickness = 0.02
@@ -128,6 +126,7 @@ gmsh.model.geo.mesh.setRecombine(2, blBottomTESurface)
 ################################################################################
 
 #Create points for wake
+wakeLength = 2*ffBoundaryScaling
 wakeTopLeftPoint = blTopRightPoint
 wakeBottomLeftPoint = blBottomRightPoint
 wakeTopRightPoint = gmsh.model.geo.addPoint(wakeLength, wakeEndThickness, 0)
@@ -154,10 +153,10 @@ gmsh.model.geo.mesh.setRecombine(2, wakeSurface)
 ################################################################################
 
 #Create points for the far field
-ffTopLeftPoint = gmsh.model.geo.addPoint(-ffHorzOffset, ffHeight/2, 0)
-ffTopRightPoint = gmsh.model.geo.addPoint(wakeLength, ffHeight/2, 0)
-ffBottomLeftPoint = gmsh.model.geo.addPoint(-ffHorzOffset, -ffHeight/2, 0)
-ffBottomRightPoint = gmsh.model.geo.addPoint(wakeLength, -ffHeight/2, 0)
+ffTopLeftPoint = gmsh.model.geo.addPoint(-ffBoundaryScaling, ffBoundaryScaling, 0)
+ffTopRightPoint = gmsh.model.geo.addPoint(wakeLength, ffBoundaryScaling, 0)
+ffBottomLeftPoint = gmsh.model.geo.addPoint(-ffBoundaryScaling, -ffBoundaryScaling, 0)
+ffBottomRightPoint = gmsh.model.geo.addPoint(wakeLength, -ffBoundaryScaling, 0)
 
 #Create lines for the far field
 ffTopLine = gmsh.model.geo.addLine(ffTopRightPoint, ffTopLeftPoint)
@@ -165,11 +164,11 @@ ffLeftLine = gmsh.model.geo.addLine(ffTopLeftPoint, ffBottomLeftPoint)
 ffBottomLine = gmsh.model.geo.addLine(ffBottomLeftPoint, ffBottomRightPoint)
 ffTopRightLine = gmsh.model.geo.addLine(wakeTopRightPoint, ffTopRightPoint)
 ffBottomRightLine = gmsh.model.geo.addLine(ffBottomRightPoint, wakeBottomRightPoint)
-gmsh.model.geo.mesh.setTransfiniteCurve(ffTopLine, round(ffPointsPerLength*(ffHorzOffset+wakeLength)))
-gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, round(ffPointsPerLength*ffHeight))
-gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomLine, round(ffPointsPerLength*(ffHorzOffset+wakeLength)))
-gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffPointsPerLength*(ffHeight/2-wakeEndThickness/2)))
-gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffPointsPerLength*(ffHeight/2-wakeEndThickness/2)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopLine, round(ffPointsPerLength*(ffBoundaryScaling+wakeLength)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffLeftLine, round(ffPointsPerLength*ffBoundaryScaling*2))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomLine, round(ffPointsPerLength*(ffBoundaryScaling+wakeLength)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffBottomRightLine, round(ffPointsPerLength*(ffBoundaryScaling-wakeEndThickness/2)))
+gmsh.model.geo.mesh.setTransfiniteCurve(ffTopRightLine, round(ffPointsPerLength*(ffBoundaryScaling-wakeEndThickness/2)))
 
 #Create the curve loop for the far field
 farFieldLoop = gmsh.model.geo.addCurveLoop([ffTopLine, ffLeftLine, ffBottomLine, ffBottomRightLine, -wakeBottomLine, -blBottomTELine, -blLESpline, -blTopTELine, -wakeTopLine, ffTopRightLine])
